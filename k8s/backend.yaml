@@ -51,7 +51,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ark2712/trailerflix-backend:dev-latest
+          image: arkhalid/trailerflix-backend:dev-latest
           imagePullPolicy: Always
           env:
             - name: MONGO_URI

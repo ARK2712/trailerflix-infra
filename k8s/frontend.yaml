@@ -52,7 +52,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ark2712/trailerflix-frontend:dev-latest
+          image: arkhalid/trailerflix-frontend:dev-latest
           imagePullPolicy: Always
           env:
             - name: REACT_APP_API_URL
