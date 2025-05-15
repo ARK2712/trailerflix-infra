@@ -8,20 +8,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ grab your infra repo
       - name: Checkout infra repo
         uses: actions/checkout@v3
 
+      # 2️⃣ log in to Docker Hub with the secrets you’ll add below
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3️⃣ build & push backend
+      - name: Build & push backend image
+        run: |
+          docker build \
+            -t arkhalid/trailerflix-backend:dev-latest \
+            ./trailerflix-backend
+          docker push arkhalid/trailerflix-backend:dev-latest
+
+      # 4️⃣ build & push frontend
+      - name: Build & push frontend image
+        run: |
+          docker build \
+            -t arkhalid/trailerflix-frontend:dev-latest \
+            ./trailerflix-frontend
+          docker push arkhalid/trailerflix-frontend:dev-latest
+
+      # 5️⃣ install kubectl so we can talk to k8s
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
           version: "latest"
 
-      # For a remote cluster: set up kubeconfig
-      # - name: Configure kubeconfig
-      #   run: |
-      #     echo "${{ secrets.KUBECONFIG_DATA }}" | base64 -d > $HOME/.kube/config
-
+      # 6️⃣ apply your k8s YAML (they refer to the :dev-latest tags above)
       - name: Apply Kubernetes manifests
         run: |
+          kubectl apply -f k8s/namespaces.yaml
           kubectl apply -f k8s/backend.yaml
           kubectl apply -f k8s/frontend.yaml
