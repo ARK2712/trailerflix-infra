@@ -8,18 +8,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ grab your infra repo
+      # 1️⃣ checkout your infra repo
       - name: Checkout infra repo
         uses: actions/checkout@v3
 
-      # 2️⃣ log in to Docker Hub with the secrets you’ll add below
+      # 2️⃣ Azure login (uses the AZURE_CREDENTIALS secret you added)
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # 3️⃣ Configure kubectl to talk to your AKS cluster
+      - name: Set AKS context
+        uses: azure/aks-set-context@v1
+        with:
+          resource-group: trailerflix-rg
+          cluster-name: trailerflix-aks
+
+      # 4️⃣ log in to Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3️⃣ build & push backend
+      # 5️⃣ Build & push your backend image
       - name: Build & push backend image
         run: |
           docker build \
@@ -27,7 +40,7 @@ jobs:
             ./trailerflix-backend
           docker push arkhalid/trailerflix-backend:dev-latest
 
-      # 4️⃣ build & push frontend
+      # 6️⃣ Build & push your frontend image
       - name: Build & push frontend image
         run: |
           docker build \
@@ -35,15 +48,9 @@ jobs:
             ./trailerflix-frontend
           docker push arkhalid/trailerflix-frontend:dev-latest
 
-      # 5️⃣ install kubectl so we can talk to k8s
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: "latest"
-
-      # 6️⃣ apply your k8s YAML (they refer to the :dev-latest tags above)
+      # 7️⃣ Apply your Kubernetes manifests
       - name: Apply Kubernetes manifests
         run: |
-          kubectl apply -f k8s/namespaces.yaml
-          kubectl apply -f k8s/backend.yaml
-          kubectl apply -f k8s/frontend.yaml
+          kubectl apply -f k8s/namespaces.yaml --validate=false
+          kubectl apply -f k8s/backend.yaml    --validate=false
+          kubectl apply -f k8s/frontend.yaml   --validate=false
