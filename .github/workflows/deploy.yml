@@ -166,6 +166,7 @@ jobs:
       - name: Set AKS context
         uses: azure/aks-set-context@v1
         with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
           resource-group: trailerflix-rg
           cluster-name: trailerflix-aks
 
