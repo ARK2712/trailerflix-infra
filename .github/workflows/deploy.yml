@@ -76,7 +76,12 @@
 name: Deploy Trailerflix Infra
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Build & Push Backend Image
+      - Build & Push Frontend Image
+    types:
+      - completed
 
 jobs:
   deploy:
