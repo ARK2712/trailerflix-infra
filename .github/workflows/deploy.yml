@@ -75,13 +75,16 @@
 
 name: Deploy Trailerflix Infra
 
+# on:
+#   workflow_run:
+#     workflows:
+#       - Build & Push Backend Image
+#       - Build & Push Frontend Image
+#     types:
+#       - completed
 on:
-  workflow_run:
-    workflows:
-      - Build & Push Backend Image
-      - Build & Push Frontend Image
-    types:
-      - completed
+  repository_dispatch:
+    types: [dev-push]
 
 jobs:
   deploy:
