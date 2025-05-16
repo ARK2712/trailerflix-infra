@@ -73,68 +73,112 @@
 #           kubectl apply -f k8s/backend.yaml    --validate=false
 #           kubectl apply -f k8s/frontend.yaml   --validate=false
 
+############################################################################################################
+
+# name: Deploy Trailerflix Infra
+
+# on:
+#   workflow_run:
+#     workflows:
+#       - Build & Push Backend Image
+#       - Build & Push Frontend Image
+#     types:
+#       - completed
+# # on:
+# #   repository_dispatch:
+# #     types: [dev-push]
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       # 1️⃣ checkout infra (manifests + workflow)
+#       - name: Checkout infra repo
+#         uses: actions/checkout@v3
+
+#       # 2️⃣ Azure login (uses the AZURE_CREDENTIALS secret you added)
+#       - name: Azure Login
+#         uses: azure/login@v1
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+#       # 3️⃣ Configure kubectl to talk to your AKS cluster
+#       - name: Set AKS context
+#         uses: azure/aks-set-context@v1
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
+#           resource-group: trailerflix-rg
+#           cluster-name: trailerflix-aks
+
+#       # 4️⃣ log in to Docker Hub
+#       - name: Log in to Docker Hub
+#         uses: docker/login-action@v2
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+#       # 5️⃣ Build & push backend image
+#       - name: Build & push backend image
+#         run: |
+#           docker build \
+#             -t arkhalid/trailerflix-backend:dev-latest \
+#             ./trailerflix-backend
+#           docker push arkhalid/trailerflix-backend:dev-latest
+
+#       # 6️⃣ Build & push frontend image
+#       - name: Build & push frontend image
+#         run: |
+#           docker build \
+#             -t arkhalid/trailerflix-frontend:dev-latest \
+#             ./trailerflix-frontend
+#           docker push arkhalid/trailerflix-frontend:dev-latest
+
+#       # 7️⃣ Apply your Kubernetes manifests
+#       - name: Apply Kubernetes manifests
+#         run: |
+#           kubectl apply -f k8s/namespaces.yaml --validate=false
+#           kubectl apply -f k8s/backend.yaml    --validate=false
+#           kubectl apply -f k8s/frontend.yaml   --validate=false
+
 name: Deploy Trailerflix Infra
 
 on:
-  workflow_run:
-    workflows:
-      - Build & Push Backend Image
-      - Build & Push Frontend Image
-    types:
-      - completed
-# on:
-#   repository_dispatch:
-#     types: [dev-push]
+  repository_dispatch:
+    types: [dev-push] # fired by your backend/frontend workflows
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ checkout infra (manifests + workflow)
+      # 1️⃣ checkout just the infra repo
       - name: Checkout infra repo
         uses: actions/checkout@v3
 
-      # 2️⃣ Azure login (uses the AZURE_CREDENTIALS secret you added)
+      # 2️⃣ Azure login
       - name: Azure Login
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 3️⃣ Configure kubectl to talk to your AKS cluster
+      # 3️⃣ point kubectl at your AKS
       - name: Set AKS context
         uses: azure/aks-set-context@v1
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
           resource-group: trailerflix-rg
           cluster-name: trailerflix-aks
 
-      # 4️⃣ log in to Docker Hub
-      - name: Log in to Docker Hub
+      # 4️⃣ (only if your cluster needs DockerHub creds)
+      - name: Docker Hub login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 5️⃣ Build & push backend image
-      - name: Build & push backend image
+      # 5️⃣ apply your k8s manifests (they reference arkhalid/...:dev-latest)
+      - name: Deploy to Kubernetes
         run: |
-          docker build \
-            -t arkhalid/trailerflix-backend:dev-latest \
-            ./trailerflix-backend
-          docker push arkhalid/trailerflix-backend:dev-latest
-
-      # 6️⃣ Build & push frontend image
-      - name: Build & push frontend image
-        run: |
-          docker build \
-            -t arkhalid/trailerflix-frontend:dev-latest \
-            ./trailerflix-frontend
-          docker push arkhalid/trailerflix-frontend:dev-latest
-
-      # 7️⃣ Apply your Kubernetes manifests
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f k8s/namespaces.yaml --validate=false
-          kubectl apply -f k8s/backend.yaml    --validate=false
-          kubectl apply -f k8s/frontend.yaml   --validate=false
+          kubectl apply -f k8s/namespaces.yaml    --validate=false
+          kubectl apply -f k8s/backend.yaml       --validate=false
+          kubectl apply -f k8s/frontend.yaml      --validate=false
